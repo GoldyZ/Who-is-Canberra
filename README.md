@@ -9,3 +9,9 @@ WiC - birth script.Rmd - when knit processes a .csv file exported from abs.stat.
 
 Subfolder - ancestry contains the output of WiC - ancestry script.Rmd loaded into the engine
 subfolder - country of birth contains the output of WiC - birth script loaded into the engine and the raw.csv file processed by the script.
+
+Subfolder - Application - console application contains the code to population the database for the application.
+
+Subfolder - Application - engine contains the engine for the application
+
+Subfolder - Database contains a dump of the generated database.
