@@ -1,0 +1,49 @@
+﻿* {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Electrolize', serif;
+    font-size: 24px;
+    color: #010101;
+    background-color: #0095a5;
+}
+div.question {
+    width: 80%;
+    float:right;
+}
+div.vis {
+    width: 16%;
+    margin: 2%;
+    float: left;
+}
+ul.dots {
+    width: 7em;
+}
+ul.dots > li {
+    display:inline-block;
+    margin: .2em;
+    width: 1em;
+    height: 1em;
+    border-radius: .5em;
+    background-color: transparent;
+}
+
+p.question {
+font-size: 48px;
+
+}
+
+
+p.caption{
+font-size:18px;
+}
+
+p.credit{
+    font-size:18px;
+}
+/*
+ul.dots > li.datapoint {
+    background-color: #CCC;
+}*/
