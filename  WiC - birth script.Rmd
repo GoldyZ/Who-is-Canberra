@@ -1,0 +1,88 @@
+---
+title: "Canberra Global Village - generate country of birth data"
+output: html_document
+---
+
+This is an R markdown document. Executing 'knit' on the .Rmd version of this document will generate the HTML version and execute the code, generating files in the format expected by the Canberra Global Village application.
+
+If you want to Knit the script you need R and the knitr package (and its' dependencies).
+
+<insert abs characteristics>
+
+Inputting ABS data. Ideally this would be improved to use the APIs. After reading in the full frame, countries we don't want are excluded.
+
+
+```{r}
+fullFrame<-read.csv("./CENSUS country of birth.csv", )
+
+workingFrame <- fullFrame[!(fullFrame$Country.of.Birth.of.Person == "South Eastern Europe, nfd(c)") & !(fullFrame$Country.of.Birth.of.Person == "Born elsewhere(e)")  & !(fullFrame$Country.of.Birth.of.Person == "Country of birth not stated"),]
+```
+
+The engine expects data as a .csv file with no headers where each row is a country followed by the associated value. The file should also have a final row providing the total by which the other rows are divided to indicate the ratio.
+
+Some countries are listed in the ABS data in ways that don't work for the project so they are transformed here. At the same time the "total" rows for each statistical area are reduced by the value for "Australia". Because we are interested in the proportions of foreign born people in each area, the Australian born individuals are excluded, and so the total must be reduced by that much.
+
+```{r}
+
+## This line is the quickest way to sort out a peculiarity of R in this case
+levels(workingFrame$Country.of.Birth.of.Person) <- c(levels(workingFrame$Country.of.Birth.of.Person), "China","Hong Kong","United Kingdom","Republic of Korea")
+
+for (i in 1:nrow(workingFrame)){
+
+  if (workingFrame[i,"Country.of.Birth.of.Person"] == "China (excl. SARs and Taiwan)(b)"){
+    workingFrame[i,"Country.of.Birth.of.Person"] <- "China"
+  }
+  if (workingFrame[i,"Country.of.Birth.of.Person"] == "Hong Kong (SAR of China)(b)"){
+    workingFrame[i,"Country.of.Birth.of.Person"] <- "Hong Kong"
+  }  
+  if (workingFrame[i,"Country.of.Birth.of.Person"] == "United Kingdom, Channel Islands and Isle of Man(d)"){
+    workingFrame[i,"Country.of.Birth.of.Person"] <- "United Kingdom"
+  }
+  if (workingFrame[i,"Country.of.Birth.of.Person"] == "Korea, Republic of (South)"){
+    workingFrame[i,"Country.of.Birth.of.Person"] <- "Republic of Korea"
+  }
+  
+  if (workingFrame[i,"Country.of.Birth.of.Person"] == "Total"){
+    matchedAustralia <- workingFrame[workingFrame$Region.Type == workingFrame[i,"Region.Type"] & workingFrame$Region == workingFrame[i,"Region"] & workingFrame$Country.of.Birth.of.Person == "Australia","Value"]
+    workingFrame[i,"Value"] <- workingFrame[i,"Value"] - matchedAustralia
+  } 
+  
+}
+```
+
+This code extracts the rows and columns needed for the ACT data. The "Country.of.Birth.of.Person" and "Value" columns are chosen, and the row for "Australia" is ignored.
+
+```{r}
+## make the ACT wide frame
+ACTFrame <- workingFrame[workingFrame$Region.Type == "States and Territories" & workingFrame$Region == "Australian Capital Territory" & !(workingFrame$Country.of.Birth.of.Person == "Australia"),c("Country.of.Birth.of.Person","Value")]
+```
+
+This code extracts the data for the Statistical Area Level 3 catagories desired, in this case Belconnen, Gungahlin, North Canberra, South Canberra, Tuggeranong, Weston Creek, Woden and Queenbeyan
+
+```{r}
+belFrame <- workingFrame[workingFrame$Region.Type == "Statistical Area Level 3" & workingFrame$Region == "Belconnen"  & !(workingFrame$Country.of.Birth.of.Person == "Australia"),c("Country.of.Birth.of.Person","Value")]
+
+gungFrame <- workingFrame[workingFrame$Region.Type == "Statistical Area Level 3" & workingFrame$Region == "Gungahlin"  & !(workingFrame$Country.of.Birth.of.Person == "Australia"),c("Country.of.Birth.of.Person","Value")]
+northFrame <- workingFrame[workingFrame$Region.Type == "Statistical Area Level 3" & workingFrame$Region == "North Canberra"  & !(workingFrame$Country.of.Birth.of.Person == "Australia"),c("Country.of.Birth.of.Person","Value")]
+southFrame <- workingFrame[workingFrame$Region.Type == "Statistical Area Level 3" & workingFrame$Region == "South Canberra"  & !(workingFrame$Country.of.Birth.of.Person == "Australia"),c("Country.of.Birth.of.Person","Value")]
+tuggFrame <- workingFrame[workingFrame$Region.Type == "Statistical Area Level 3" & workingFrame$Region == "Tuggeranong"  & !(workingFrame$Country.of.Birth.of.Person == "Australia"),c("Country.of.Birth.of.Person","Value")]
+westonFrame <- workingFrame[workingFrame$Region.Type == "Statistical Area Level 3" & workingFrame$Region == "Weston Creek"  & !(workingFrame$Country.of.Birth.of.Person == "Australia"),c("Country.of.Birth.of.Person","Value")]
+wodenFrame <- workingFrame[workingFrame$Region.Type == "Statistical Area Level 3" & workingFrame$Region == "Woden"  & !(workingFrame$Country.of.Birth.of.Person == "Australia"),c("Country.of.Birth.of.Person","Value")]
+queenFrame <- workingFrame[workingFrame$Region.Type == "Statistical Area Level 3" & workingFrame$Region == "Queenbeyan"  & !(workingFrame$Country.of.Birth.of.Person == "Australia"),c("Country.of.Birth.of.Person","Value")]
+```
+
+The data frames are written to .csv files named in the format "datatype (plural of region)" to conform to engine expectations.
+
+```{r}
+write.table(ACTFrame, file = "./Country of birth (Canberrans).csv", row.names = FALSE, sep = ",", col.names = FALSE)
+write.table(belFrame, file = "./Country of birth (Belconnenites).csv", row.names = FALSE, sep = "," , col.names = FALSE)
+write.table(gungFrame, file = "./Country of birth (People in Gungahlin).csv", row.names = FALSE, sep = ",", col.names = FALSE)
+write.table(northFrame, file = "./Country of birth (North Canberrans).csv", row.names = FALSE, sep = ",", col.names = FALSE)
+write.table(southFrame, file = "./Country of birth (South Canberrans).csv", row.names = FALSE, sep = ",", col.names = FALSE)
+write.table(tuggFrame, file = "./Country of birth (People in Tuggeranong).csv", row.names = FALSE, sep = ",", col.names = FALSE)
+write.table(westonFrame, file = "./Country of birth (People in Weston Creek).csv", row.names = FALSE, sep = ",", col.names = FALSE)
+write.table(wodenFrame, file = "./Country of birth (Wodenites).csv", row.names = FALSE, sep = ",", col.names = FALSE)
+write.table(queenFrame, file = "./Country of birth (Queenbeyanites).csv", row.names = FALSE, sep = ",", col.names = FALSE)
+```
+
+

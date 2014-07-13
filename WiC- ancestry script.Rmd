@@ -1,0 +1,212 @@
+---
+title: " Who is Canberra - Generate Ancestry Data"
+output: html_document
+---
+
+### Use
+This is an R markdown document. Executing 'knit' on the .Rmd version of this document will generate an HTML document containing this text and the R code, and execute the code generating files in the format expected by the Who is Canberra application.
+
+If you want to Knit the script you need R and the knitr package (and its' dependencies), the "rjson" package, and an active internet connection to download the data from stat.abs.gov.au
+
+```{r}
+require("rjson")
+require(RCurl)
+```
+
+### Download ABS data
+
+The following URL calls the ABS ITT query interface for the Census 2011 Ancestry by country of Parent's Birth dataset (ABS_CENSUS2011_B08), selecting only the regions of interest, and the total responses for each ancestry.
+
+Regions selected:
+  SA Level 4: 
+   - ACT 801
+  SA Level 3: 
+  - Belconnen 80101, 
+  - Gungahlin 80104
+  - North Canberra 80105
+  - South Canberra 80106
+  - Tuggeranong 80107
+  - Weston Creek 80108
+  - Woden 80109
+  - Queenbeyan 10102
+
+```{r}
+dataURL <- "http://stat.abs.gov.au/itt/query.jsp?method=GetGenericData&datasetid=ABS_CENSUS2011_B08&and=MEASURE.TOT,ANCP.&or=REGION.10102,REGION.801,REGION.80101,REGION.80104,REGION.80105,REGION.80106,REGION.80107,REGION.80108,REGION.80109&format=json"
+
+``` 
+
+Read the data from the URL and do a dance to extract the data from the Json provided by the API
+
+```{r}
+
+fullJson <- fromJSON(getURL(dataURL))
+smallJson <- fullJson$series
+
+tempmatrix <- matrix(data = NA, nrow = 306, ncol = 3)
+for (i in 1:306){
+tempmatrix[i,] <- rbind(smallJson[[i]]$concepts[[2]][[2]],smallJson[[i]]$concepts[[5]][[2]],smallJson[[i]]$observations[[1]][[2]])
+}
+
+fullFrame <- data.frame(tempmatrix)
+colnames(fullFrame)<-c("ANCP","REGION","Value")
+
+```
+
+The ancestry codes we aren't interested in are subsetted out using ABS ANCP codes:
+Other(d) OTH
+Total responses(c) TOT
+Ancestry not stated Z
+
+```{r}
+workingFrame <- fullFrame[!(fullFrame$ANCP == "OTH") & !(fullFrame$ANCP == "TOT")  & !(fullFrame$ANCP == "Z"),]
+
+transform(workingFrame, Value = as.numeric(Value))
+
+```
+
+Turning the ANCP codes into countries makes the output useful, albeit this is a bit kludgy at the moment.
+
+```{r}
+
+## This line is the quickest way to sort out a peculiarity of how R treats strings and factors in dataframes in this case
+levels(workingFrame$ANCP) <- c(levels(workingFrame$ANCP), "Australian","Australian Aboriginal","Chinese","Croatian","Dutch","English","Filipino","French","German","Greek","Hungarian","Indian","Irish","Italian","Korean","Lebanese","Macedonian","Maltese","Maori","New Zealander","Polish","Russian","Scottish","Serbian","Sinhalese","South African","Spanish","Turkish","Vietnamese","Welsh","Total persons(c)")
+
+
+for (i in 1:nrow(workingFrame)){
+
+  if (workingFrame[i,"ANCP"] == "1101") {
+    workingFrame[i,"ANCP"] <- "Australian"
+  }
+  if (workingFrame[i,"ANCP"] == "1102") {
+    workingFrame[i,"ANCP"] <- "Australian Aboriginal"
+  }
+    if (workingFrame[i,"ANCP"] == "6101") {
+    workingFrame[i,"ANCP"] <- "Chinese"
+  }
+    if (workingFrame[i,"ANCP"] == "3204") {
+    workingFrame[i,"ANCP"] <- "Croatian"
+  }
+    if (workingFrame[i,"ANCP"] == "2303") {
+    workingFrame[i,"ANCP"] <- "Dutch"
+  }
+    if (workingFrame[i,"ANCP"] == "2101") {
+    workingFrame[i,"ANCP"] <- "English"
+  }
+  if (workingFrame[i,"ANCP"] == "5201") {
+    workingFrame[i,"ANCP"] <- "Filipino"
+  }
+  if (workingFrame[i,"ANCP"] == "2305") {
+    workingFrame[i,"ANCP"] <- "French"
+  }
+  if (workingFrame[i,"ANCP"] == "2306") {
+    workingFrame[i,"ANCP"] <- "German"
+  }
+  if (workingFrame[i,"ANCP"] == "3205") {
+    workingFrame[i,"ANCP"] <- "Greek"
+  }
+  if (workingFrame[i,"ANCP"] == "3304") {
+    workingFrame[i,"ANCP"] <- "Hungarian"
+  }
+  if (workingFrame[i,"ANCP"] == "7106") {
+    workingFrame[i,"ANCP"] <- "Indian"
+  }
+    if (workingFrame[i,"ANCP"] == "2201") {
+    workingFrame[i,"ANCP"] <- "Irish"
+  }
+    if (workingFrame[i,"ANCP"] == "3103") {
+    workingFrame[i,"ANCP"] <- "Italian"
+  }
+    if (workingFrame[i,"ANCP"] == "6902") {
+    workingFrame[i,"ANCP"] <- "Korean"
+  }
+    if (workingFrame[i,"ANCP"] == "4106") {
+    workingFrame[i,"ANCP"] <- "Lebanese"
+  }
+    if (workingFrame[i,"ANCP"] == "3206") {
+    workingFrame[i,"ANCP"] <- "Macedonian"
+  }
+    if (workingFrame[i,"ANCP"] == "3104") {
+    workingFrame[i,"ANCP"] <- "Maltese"
+  }
+    if (workingFrame[i,"ANCP"] == "1201") {
+    workingFrame[i,"ANCP"] <- "Maori"
+  }
+    if (workingFrame[i,"ANCP"] == "1202") {
+    workingFrame[i,"ANCP"] <- "New Zealander"
+  }
+    if (workingFrame[i,"ANCP"] == "3307") {
+    workingFrame[i,"ANCP"] <- "Polish"
+  }
+      if (workingFrame[i,"ANCP"] == "3308") {
+    workingFrame[i,"ANCP"] <- "Russian"
+  }
+      if (workingFrame[i,"ANCP"] == "2102") {
+    workingFrame[i,"ANCP"] <- "Scottish"
+  }
+      if (workingFrame[i,"ANCP"] == "3213") {
+    workingFrame[i,"ANCP"] <- "Serbian"
+  }
+      if (workingFrame[i,"ANCP"] == "7115") {
+    workingFrame[i,"ANCP"] <- "Sinhalese"
+  }
+      if (workingFrame[i,"ANCP"] == "9215") {
+    workingFrame[i,"ANCP"] <- "South African"
+  }
+        if (workingFrame[i,"ANCP"] == "3106") {
+    workingFrame[i,"ANCP"] <- "Spanish"
+  }
+        if (workingFrame[i,"ANCP"] == "4907") {
+    workingFrame[i,"ANCP"] <- "Turkish"
+  }
+        if (workingFrame[i,"ANCP"] == "5107") {
+    workingFrame[i,"ANCP"] <- "Vietnamese"
+  }
+        if (workingFrame[i,"ANCP"] == "2103") {
+    workingFrame[i,"ANCP"] <- "Welsh"
+  }
+        if (workingFrame[i,"ANCP"] == "TOTP") {
+    workingFrame[i,"ANCP"] <- "Total persons(c)"
+  }
+}
+```
+  
+### Subsetting the data by region
+
+The engine expects data as a single .csv file for each region, with no headers and with each row a country followed by the value. The file should also have a final row providing the total by which the other rows are divided to indicate the ratio.
+
+This code extracts the rows and columns needed for the ACT data. The ABS Region codes provided above are used to subset the appropriate data.
+
+```{r}
+ACTFrame <- workingFrame[workingFrame$REGION == 801,c("ANCP","Value")]
+```
+
+This code extracts the data for the Statistical Area Level 3 catagories desired: Belconnen, Gungahlin, North Canberra, South Canberra, Tuggeranong, Weston Creek, Woden and Queenbeyan
+
+```{r}
+belFrame <- workingFrame[workingFrame$REGION == 80101,c("ANCP","Value")]
+gungFrame <- workingFrame[workingFrame$REGION == 80104,c("ANCP","Value")]
+northFrame <- workingFrame[workingFrame$REGION == 80105,c("ANCP","Value")]
+southFrame <- workingFrame[workingFrame$REGION == 80106,c("ANCP","Value")]
+tuggFrame <- workingFrame[workingFrame$REGION == 80107,c("ANCP","Value")]
+westonFrame <- workingFrame[workingFrame$REGION == 80108,c("ANCP","Value")]
+wodenFrame <- workingFrame[workingFrame$REGION == 80109,c("ANCP","Value")]
+queenFrame <- workingFrame[workingFrame$REGION == 10102,c("ANCP","Value")]
+```
+
+### Writing output files
+The data frames are written to .csv files named in the format "datatype (plural of region).csv" to conform to engine expectations.
+
+```{r}
+## write data frames
+write.table(ACTFrame, file = "./Ancestry (Canberrans).csv", row.names = FALSE, sep = ",", col.names = FALSE)
+write.table(belFrame, file = "./Ancestry (Belconnenites).csv", row.names = FALSE, sep = ",", col.names = FALSE)
+write.table(gungFrame, file = "./Ancestry (people in Gungahlin).csv", row.names = FALSE, sep = ",", col.names = FALSE)
+write.table(northFrame, file = "./Ancestry (North Canberrans).csv", row.names = FALSE, sep = ",", col.names = FALSE)
+write.table(southFrame, file = "./Ancestry (South Canberrans).csv", row.names = FALSE, sep = ",", col.names = FALSE)
+write.table(tuggFrame, file = "./Ancestry (people in Tuggeranong).csv", row.names = FALSE, sep = ",", col.names = FALSE)
+write.table(westonFrame, file = "./Ancestry (people in Weston Creek).csv", row.names = FALSE, sep = ",", col.names = FALSE)
+write.table(wodenFrame, file = "./Ancestry (Wodenites).csv", row.names = FALSE, sep = ",", col.names = FALSE)
+write.table(queenFrame, file = "./Ancestry (Queenbeyanites).csv", row.names = FALSE, sep = ",", col.names = FALSE)
+```
+
+The data files are now ready to load into the Who is Canberra application.
